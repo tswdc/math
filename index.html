@@ -20,6 +20,11 @@
                 <button class="lang-btn active" type="button" data-lang="th">ไทย</button>
                 <button class="lang-btn" type="button" data-lang="en">English</button>
             </div>
+
+            <label class="ai-toggle">
+                <input id="ai-toggle" type="checkbox" checked>
+                <span class="ai-label" data-i18n="aiLabel">โจทย์ปัญหาแบบ AI</span>
+            </label>
             
             <div class="menu-buttons">
                 <button class="menu-btn" onclick="startGame('math')">
@@ -111,9 +116,9 @@
                         
                         <!-- Numbers -->
                         <text x="100" y="30" class="clock-number">12</text>
-                        <text x="170" y="110" class="clock-number">3</text>
-                        <text x="100" y="180" class="clock-number">6</text>
-                        <text x="30" y="110" class="clock-number">9</text>
+                        <text x="170" y="100" class="clock-number">3</text>
+                        <text x="100" y="170" class="clock-number">6</text>
+                        <text x="30" y="100" class="clock-number">9</text>
                     </svg>
                 </div>
                 
@@ -130,6 +135,6 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>

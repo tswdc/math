@@ -35,7 +35,7 @@ A colorful, interactive web-based quiz application designed for primary school s
 
 ## How to Use
 
-1. Open `index.html` in a web browser
+1. Open `index.html` in a web browser (or use the local server below for AI mode)
 2. Select a game module from the main menu
 3. Answer questions to earn points
 4. Click the "🏠 Menu" button to return to the main menu
@@ -58,6 +58,27 @@ A colorful, interactive web-based quiz application designed for primary school s
 ## Language Support
 
 The application supports both English and Thai (ภาษาไทย) to make it accessible for Thai students learning mathematics.
+
+## Gemini AI Proxy (Optional)
+
+The AI word-problem feature uses a simple proxy to call Google Gemini securely.
+
+### Setup
+
+1. Create a `.env` file (see `.env.example`) and add your API key:
+
+   - `GEMINI_API_KEY=YOUR_KEY`
+
+2. Install and run the server:
+
+   - `npm install`
+   - `npm start`
+
+3. Open the app at:
+
+   - `http://localhost:3000`
+
+The proxy endpoint is `POST /api/gemini` and returns JSON: `{ "text": "..." }`.
 
 ---
 
