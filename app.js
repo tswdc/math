@@ -6,9 +6,140 @@ let scores = {
     time: 0
 };
 
+let currentLanguage = 'th';
+
 // Game state
 let currentQuestion = null;
 let currentAnswer = null;
+let audioContext = null;
+let overlayTimeoutId = null;
+
+const i18n = {
+    th: {
+        title: '🎮 เกมฝึกคณิตศาสตร์ 🎮',
+        subtitle: 'เกมคณิตศาสตร์สนุกๆ',
+        menuMath: 'คณิตพื้นฐาน',
+        menuMathDesc: 'ฝึกบวก ลบ คูณ หาร',
+        menuWeight: 'แปลงหน่วยน้ำหนัก',
+        menuWeightDesc: 'กิโลกรัม กรัม และ ขีด',
+        menuTime: 'เวลาและนาฬิกา',
+        menuTimeDesc: 'อ่านเวลาจากนาฬิกา',
+        scoreLabel: 'คะแนน:',
+        menuBack: '🏠 เมนู',
+        compareQuestion: 'อันไหนหนักกว่า?',
+        compareSame: 'เท่ากัน',
+        timePrompts: [
+            'กี่โมงแล้ว?',
+            'ถึงเวลาเข้าเรียนแล้ว ดูนาฬิกาแล้วตอบเวลา',
+            'ได้เวลากินขนม นาฬิกาบอกเวลาอะไร?',
+            'รถไฟกำลังออก นาฬิกาเป็นเวลาอะไร?'
+        ]
+    },
+    en: {
+        title: '🎮 Math Learning Games 🎮',
+        subtitle: 'Fun math games for kids',
+        menuMath: 'Basic Math',
+        menuMathDesc: 'Practice +, -, ×, ÷',
+        menuWeight: 'Weight Conversion',
+        menuWeightDesc: 'kg, g, and khit',
+        menuTime: 'Time & Clock',
+        menuTimeDesc: 'Read the clock',
+        scoreLabel: 'Score:',
+        menuBack: '🏠 Menu',
+        compareQuestion: 'Which is heavier?',
+        compareSame: 'Same',
+        timePrompts: [
+            'What time is it?',
+            'School starts now. Read the clock.',
+            'Snack time! What time does the clock show?',
+            'A train leaves now. What time is shown?'
+        ]
+    }
+};
+
+const weightUnits = {
+    th: {
+        kg: 'กิโลกรัม',
+        g: 'กรัม',
+        khit: 'ขีด'
+    },
+    en: {
+        kg: 'kg',
+        g: 'g',
+        khit: 'khit'
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderClockTicks();
+    setupLanguageSelector();
+    setLanguage(currentLanguage);
+});
+
+function setupLanguageSelector() {
+    const buttons = document.querySelectorAll('.lang-btn');
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const lang = btn.dataset.lang;
+            setLanguage(lang);
+        });
+    });
+}
+
+function setLanguage(lang) {
+    if(!i18n[lang]) {
+        return;
+    }
+
+    currentLanguage = lang;
+    document.documentElement.setAttribute('lang', lang);
+
+    const translations = i18n[lang];
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+        const key = element.dataset.i18n;
+        if(translations[key]) {
+            element.textContent = translations[key];
+        }
+    });
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+    });
+}
+
+function renderClockTicks() {
+    const tickGroup = document.getElementById('clock-ticks');
+    if(!tickGroup) {
+        return;
+    }
+
+    tickGroup.innerHTML = '';
+
+    const centerX = 100;
+    const centerY = 100;
+    const minuteOuterRadius = 92;
+    const minuteInnerRadius = 86;
+    const hourInnerRadius = 80;
+
+    for(let i = 0; i < 60; i++) {
+        const angle = (i * 6 - 90) * Math.PI / 180;
+        const isHourTick = i % 5 === 0;
+        const innerRadius = isHourTick ? hourInnerRadius : minuteInnerRadius;
+
+        const x1 = centerX + innerRadius * Math.cos(angle);
+        const y1 = centerY + innerRadius * Math.sin(angle);
+        const x2 = centerX + minuteOuterRadius * Math.cos(angle);
+        const y2 = centerY + minuteOuterRadius * Math.sin(angle);
+
+        const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        tick.setAttribute('x1', x1);
+        tick.setAttribute('y1', y1);
+        tick.setAttribute('x2', x2);
+        tick.setAttribute('y2', y2);
+        tick.setAttribute('class', isHourTick ? 'hour-tick' : 'minute-tick');
+        tickGroup.appendChild(tick);
+    }
+}
 
 // ==================== Main App Functions ====================
 
@@ -48,9 +179,105 @@ function updateScore(gameType, points) {
     document.getElementById(`${gameType}-score`).textContent = scores[gameType];
 }
 
+function showFeedbackOverlay(type) {
+    const overlay = document.getElementById('feedback-overlay');
+    const image = document.getElementById('feedback-image');
+
+    if(!overlay || !image) {
+        return;
+    }
+
+    image.src = type === 'correct' ? 'assets/correct.svg' : 'assets/wrong.svg';
+    overlay.classList.remove('correct', 'wrong', 'show');
+    overlay.classList.add(type);
+
+    requestAnimationFrame(() => {
+        overlay.classList.add('show');
+    });
+
+    if(overlayTimeoutId) {
+        clearTimeout(overlayTimeoutId);
+    }
+
+    overlayTimeoutId = setTimeout(() => {
+        overlay.classList.remove('show');
+    }, 700);
+}
+
+function playFeedbackSound(type) {
+    if(!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    const now = audioContext.currentTime;
+    const gain = audioContext.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.15, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    gain.connect(audioContext.destination);
+
+    const osc1 = audioContext.createOscillator();
+    osc1.type = 'sine';
+    osc1.connect(gain);
+
+    if(type === 'correct') {
+        osc1.frequency.setValueAtTime(660, now);
+        const osc2 = audioContext.createOscillator();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(880, now + 0.08);
+        osc2.connect(gain);
+        osc2.start(now + 0.08);
+        osc2.stop(now + 0.25);
+    } else {
+        osc1.frequency.setValueAtTime(220, now);
+    }
+
+    osc1.start(now);
+    osc1.stop(now + 0.25);
+}
+
 // ==================== Basic Math Game ====================
 
 const mathOperations = ['+', '-', '*', '/'];
+const mathWordProblemTemplates = {
+    th: {
+        '+': [
+            (a, b) => `มีแอปเปิล ${a} ลูก ได้เพิ่มอีก ${b} ลูก รวมทั้งหมดกี่ลูก?`,
+            (a, b) => `มีลูกบอล ${a} ลูก มีเพิ่มมาอีก ${b} ลูก ตอนนี้มีทั้งหมดกี่ลูก?`
+        ],
+        '-': [
+            (a, b) => `มีคุกกี้ ${a} ชิ้น กินไป ${b} ชิ้น เหลือกี่ชิ้น?`,
+            (a, b) => `มีดินสอ ${a} แท่ง เอาออกไป ${b} แท่ง เหลือกี่แท่ง?`
+        ],
+        '*': [
+            (a, b) => `มีถุง ${a} ใบ แต่ละถุงมีลูกแก้ว ${b} เม็ด รวมทั้งหมดกี่เม็ด?`,
+            (a, b) => `มีโต๊ะ ${a} โต๊ะ โต๊ะละ ${b} แก้ว รวมทั้งหมดกี่แก้ว?`
+        ],
+        '/': [
+            (a, b) => `มีลูกอม ${a} เม็ด แบ่งให้เด็ก ${b} คนเท่าๆ กัน เด็กแต่ละคนได้กี่เม็ด?`,
+            (a, b) => `มีสติ๊กเกอร์ ${a} ดวง แบ่งเป็น ${b} กลุ่มเท่าๆ กัน กลุ่มละกี่ดวง?`
+        ]
+    },
+    en: {
+        '+': [
+            (a, b) => `Mia has ${a} apples and gets ${b} more. How many apples now?`,
+            (a, b) => `There are ${a} balloons. ${b} more balloons arrive. Total balloons?`
+        ],
+        '-': [
+            (a, b) => `There are ${a} cookies. ${b} are eaten. How many left?`,
+            (a, b) => `A box has ${a} pencils. ${b} are taken away. How many remain?`
+        ],
+        '*': [
+            (a, b) => `${a} bags have ${b} marbles each. How many marbles?`,
+            (a, b) => `There are ${a} tables with ${b} cups each. Total cups?`
+        ],
+        '/': [
+            (a, b) => `${a} candies are shared among ${b} kids. Each kid gets how many?`,
+            (a, b) => `Divide ${a} stickers into ${b} groups. Stickers per group?`
+        ]
+    }
+};
+const mathStandardPrompt = (a, b, op) => `${a} ${op} ${b} = ?`;
 
 function startMathGame() {
     scores.math = 0;
@@ -91,8 +318,15 @@ function generateMathQuestion() {
             break;
     }
     
-    // Display question
-    document.getElementById('math-question').textContent = `${num1} ${operation} ${num2} = ?`;
+    // Display question (sometimes as word problem)
+    const useWordProblem = Math.random() < 0.4;
+    if(useWordProblem) {
+        const templates = mathWordProblemTemplates[currentLanguage][operation];
+        const pick = templates[Math.floor(Math.random() * templates.length)];
+        document.getElementById('math-question').textContent = pick(num1, num2);
+    } else {
+        document.getElementById('math-question').textContent = mathStandardPrompt(num1, num2, operation);
+    }
     currentAnswer = correctAnswer;
     
     // Generate answer options
@@ -139,6 +373,8 @@ function checkMathAnswer(selectedAnswer) {
         // Correct answer
         feedback.textContent = '🎉 Correct! เยี่ยมมาก!';
         feedback.className = 'feedback correct';
+        showFeedbackOverlay('correct');
+        playFeedbackSound('correct');
         updateScore('math', 10);
         
         // Highlight correct button
@@ -156,6 +392,8 @@ function checkMathAnswer(selectedAnswer) {
         // Wrong answer
         feedback.textContent = '❌ Try again! ลองใหม่อีกครั้ง!';
         feedback.className = 'feedback wrong';
+        showFeedbackOverlay('wrong');
+        playFeedbackSound('wrong');
         
         // Highlight wrong button
         buttons.forEach(btn => {
@@ -186,8 +424,10 @@ function generateWeightQuestion() {
     const feedback = document.getElementById('weight-feedback');
     feedback.textContent = '';
     feedback.className = 'feedback';
+
+    currentQuestion = null;
     
-    // Thai weight unit: 1 ขีด (khit) = 15 grams
+    // Thai weight unit: 1 ขีด (khit) = 100 grams
     // Question types:
     // 1. kg to g
     // 2. g to kg
@@ -195,56 +435,91 @@ function generateWeightQuestion() {
     // 4. g to ขีด
     // 5. Compare weights
     
-    const questionType = Math.floor(Math.random() * 5);
+    const questionType = Math.floor(Math.random() * 6);
     let questionText, correctAnswer;
+    const units = weightUnits[currentLanguage];
     
     switch(questionType) {
         case 0: // kg to g
             const kg = Math.floor(Math.random() * 5) + 1;
-            questionText = `${kg} kg = ? g`;
+            questionText = `${kg} ${units.kg} = ? ${units.g}`;
             correctAnswer = kg * 1000;
             break;
         case 1: // g to kg
             const g = (Math.floor(Math.random() * 5) + 1) * 1000;
-            questionText = `${g} g = ? kg`;
+            questionText = `${g} ${units.g} = ? ${units.kg}`;
             correctAnswer = g / 1000;
             break;
         case 2: // ขีด to g
             const khit = Math.floor(Math.random() * 10) + 1;
-            questionText = `${khit} ขีด = ? g`;
-            correctAnswer = khit * 15;
+            questionText = `${khit} ${units.khit} = ? ${units.g}`;
+            correctAnswer = khit * 100;
             break;
         case 3: // g to ขีด
-            const grams = (Math.floor(Math.random() * 10) + 1) * 15;
-            questionText = `${grams} g = ? ขีด`;
-            correctAnswer = grams / 15;
+            const grams = (Math.floor(Math.random() * 10) + 1) * 100;
+            questionText = `${grams} ${units.g} = ? ${units.khit}`;
+            correctAnswer = grams / 100;
             break;
         case 4: // Compare weights
             const weight1 = Math.floor(Math.random() * 500) + 100;
             const weight2 = Math.floor(Math.random() * 500) + 100;
-            const unit1 = Math.random() > 0.5 ? 'g' : 'ขีด';
-            const unit2 = Math.random() > 0.5 ? 'g' : 'ขีด';
+            const unit1 = Math.random() > 0.5 ? 'g' : 'khit';
+            const unit2 = Math.random() > 0.5 ? 'g' : 'khit';
             
-            const w1InGrams = unit1 === 'g' ? weight1 : weight1 * 15;
-            const w2InGrams = unit2 === 'g' ? weight2 : weight2 * 15;
+            const w1InGrams = unit1 === 'g' ? weight1 : weight1 * 100;
+            const w2InGrams = unit2 === 'g' ? weight2 : weight2 * 100;
+            const option1 = `${weight1} ${units[unit1]}`;
+            const option2 = `${weight2} ${units[unit2]}`;
+            const sameLabel = currentLanguage === 'th'
+                ? `${i18n.th.compareSame} / ${i18n.en.compareSame}`
+                : `${i18n.en.compareSame} / ${i18n.th.compareSame}`;
             
             if(w1InGrams > w2InGrams) {
-                questionText = `Which is heavier? / อันไหนหนักกว่า?`;
-                correctAnswer = `${weight1} ${unit1}`;
+                questionText = currentLanguage === 'th'
+                    ? `${i18n.th.compareQuestion} / ${i18n.en.compareQuestion}`
+                    : `${i18n.en.compareQuestion} / ${i18n.th.compareQuestion}`;
+                correctAnswer = option1;
             } else if(w2InGrams > w1InGrams) {
-                questionText = `Which is heavier? / อันไหนหนักกว่า?`;
-                correctAnswer = `${weight2} ${unit2}`;
+                questionText = currentLanguage === 'th'
+                    ? `${i18n.th.compareQuestion} / ${i18n.en.compareQuestion}`
+                    : `${i18n.en.compareQuestion} / ${i18n.th.compareQuestion}`;
+                correctAnswer = option2;
             } else {
-                questionText = `Which is heavier? / อันไหนหนักกว่า?`;
-                correctAnswer = 'Same / เท่ากัน';
+                questionText = currentLanguage === 'th'
+                    ? `${i18n.th.compareQuestion} / ${i18n.en.compareQuestion}`
+                    : `${i18n.en.compareQuestion} / ${i18n.th.compareQuestion}`;
+                correctAnswer = sameLabel;
             }
             
             // Store comparison options
             currentQuestion = {
                 type: 'compare',
-                options: [`${weight1} ${unit1}`, `${weight2} ${unit2}`, 'Same / เท่ากัน']
+                options: [option1, option2, sameLabel]
             };
             break;
+        case 5: { // Word problem
+            const scenarioType = Math.floor(Math.random() * 3);
+            if(scenarioType === 0) {
+                const kg = Math.floor(Math.random() * 4) + 1;
+                questionText = currentLanguage === 'th'
+                    ? `ตะกร้าหนัก ${kg} กิโลกรัม เท่ากับกี่กรัม?`
+                    : `A basket weighs ${kg} kg. How many grams is that?`;
+                correctAnswer = kg * 1000;
+            } else if(scenarioType === 1) {
+                const khit = Math.floor(Math.random() * 8) + 2;
+                questionText = currentLanguage === 'th'
+                    ? `แม่ซื้อผลไม้ ${khit} ขีด เท่ากับกี่กรัม?`
+                    : `Mom buys ${khit} khit of fruit. How many grams is that?`;
+                correctAnswer = khit * 100;
+            } else {
+                const grams = (Math.floor(Math.random() * 8) + 2) * 100;
+                questionText = currentLanguage === 'th'
+                    ? `ขนมหนัก ${grams} กรัม เท่ากับกี่ขีด?`
+                    : `A snack is ${grams} g. How many khit is that?`;
+                correctAnswer = grams / 100;
+            }
+            break;
+        }
     }
     
     document.getElementById('weight-question').textContent = questionText;
@@ -255,6 +530,23 @@ function generateWeightQuestion() {
 
 function generateWeightAnswers(correctAnswer, questionType) {
     let answers;
+    let unitLabel = '';
+    const units = weightUnits[currentLanguage];
+
+    switch(questionType) {
+        case 0:
+            unitLabel = units.g;
+            break;
+        case 1:
+            unitLabel = units.kg;
+            break;
+        case 2:
+            unitLabel = units.g;
+            break;
+        case 3:
+            unitLabel = units.khit;
+            break;
+    }
     
     if(questionType === 4) {
         // For comparison questions
@@ -288,7 +580,8 @@ function generateWeightAnswers(correctAnswer, questionType) {
     answers.forEach(answer => {
         const btn = document.createElement('button');
         btn.className = 'answer-btn';
-        btn.textContent = answer;
+        btn.dataset.value = answer;
+        btn.textContent = questionType === 4 ? answer : `${answer} ${unitLabel}`;
         btn.onclick = () => checkWeightAnswer(answer);
         answersContainer.appendChild(btn);
     });
@@ -297,18 +590,25 @@ function generateWeightAnswers(correctAnswer, questionType) {
 function checkWeightAnswer(selectedAnswer) {
     const buttons = document.querySelectorAll('#weight-answers .answer-btn');
     const feedback = document.getElementById('weight-feedback');
+
+    const isCompare = currentQuestion && currentQuestion.type === 'compare';
     
     buttons.forEach(btn => btn.disabled = true);
     
-    const isCorrect = selectedAnswer == currentAnswer || selectedAnswer === currentAnswer;
+    const isCorrect = isCompare
+        ? selectedAnswer === currentAnswer
+        : Number(selectedAnswer) === Number(currentAnswer);
     
     if(isCorrect) {
         feedback.textContent = '🎉 Correct! เยี่ยมมาก!';
         feedback.className = 'feedback correct';
+        showFeedbackOverlay('correct');
+        playFeedbackSound('correct');
         updateScore('weight', 10);
         
         buttons.forEach(btn => {
-            if(btn.textContent == currentAnswer || btn.textContent === currentAnswer) {
+            const value = isCompare ? btn.dataset.value : Number(btn.dataset.value);
+            if(value === currentAnswer || value === Number(currentAnswer)) {
                 btn.classList.add('correct');
             }
         });
@@ -319,11 +619,15 @@ function checkWeightAnswer(selectedAnswer) {
     } else {
         feedback.textContent = '❌ Try again! ลองใหม่อีกครั้ง!';
         feedback.className = 'feedback wrong';
+        showFeedbackOverlay('wrong');
+        playFeedbackSound('wrong');
         
         buttons.forEach(btn => {
-            if(btn.textContent === selectedAnswer.toString() || btn.textContent === selectedAnswer) {
+            const value = isCompare ? btn.dataset.value : Number(btn.dataset.value);
+            const normalizedSelected = isCompare ? selectedAnswer : Number(selectedAnswer);
+            if(value === normalizedSelected) {
                 btn.classList.add('wrong');
-            } else if(btn.textContent == currentAnswer || btn.textContent === currentAnswer) {
+            } else if(value === currentAnswer || value === Number(currentAnswer)) {
                 btn.classList.add('correct');
             }
         });
@@ -356,7 +660,8 @@ function generateTimeQuestion() {
     setClockTime(hours, minutes);
     
     // Create question
-    document.getElementById('time-question').textContent = 'What time is it? / กี่โมงแล้ว?';
+    const timePrompts = i18n[currentLanguage].timePrompts;
+    document.getElementById('time-question').textContent = timePrompts[Math.floor(Math.random() * timePrompts.length)];
     
     // Store correct answer
     const timeString = formatTime(hours, minutes);
@@ -444,6 +749,8 @@ function checkTimeAnswer(selectedAnswer) {
     if(selectedAnswer === currentAnswer) {
         feedback.textContent = '🎉 Correct! เยี่ยมมาก!';
         feedback.className = 'feedback correct';
+        showFeedbackOverlay('correct');
+        playFeedbackSound('correct');
         updateScore('time', 10);
         
         buttons.forEach(btn => {
@@ -458,6 +765,8 @@ function checkTimeAnswer(selectedAnswer) {
     } else {
         feedback.textContent = '❌ Try again! ลองใหม่อีกครั้ง!';
         feedback.className = 'feedback wrong';
+        showFeedbackOverlay('wrong');
+        playFeedbackSound('wrong');
         
         buttons.forEach(btn => {
             if(btn.textContent === selectedAnswer) {

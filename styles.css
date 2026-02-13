@@ -20,6 +20,37 @@ body {
     position: relative;
 }
 
+.feedback-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.feedback-overlay.show {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.feedback-image {
+    width: 180px;
+    height: 180px;
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.25));
+}
+
+.feedback-overlay.correct .feedback-image {
+    filter: drop-shadow(0 10px 20px rgba(17, 153, 142, 0.4));
+}
+
+.feedback-overlay.wrong .feedback-image {
+    filter: drop-shadow(0 10px 20px rgba(235, 51, 73, 0.4));
+}
+
 .screen {
     display: none;
     background: rgba(255, 255, 255, 0.95);
@@ -58,6 +89,31 @@ body {
     color: #4ecdc4;
     text-align: center;
     margin-bottom: 40px;
+}
+
+.lang-selector {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 30px;
+}
+
+.lang-btn {
+    background: rgba(255, 255, 255, 0.8);
+    border: 2px solid #ff6b6b;
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #ff6b6b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.lang-btn.active,
+.lang-btn:hover {
+    background: #ff6b6b;
+    color: white;
 }
 
 .menu-buttons {
@@ -291,10 +347,17 @@ body {
     stroke-width: 3;
 }
 
-.hour-marker {
+.hour-tick {
     stroke: #2c3e50;
     stroke-width: 3;
     stroke-linecap: round;
+}
+
+.minute-tick {
+    stroke: #2c3e50;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    opacity: 0.7;
 }
 
 .hour-hand {

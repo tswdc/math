@@ -14,7 +14,7 @@ A colorful, interactive web-based quiz application designed for primary school s
 
 2. **Weight Unit Conversion (แปลงหน่วยน้ำหนัก)**
    - Convert between kilograms (kg) and grams (g)
-   - Learn Thai weight unit - ขีด (khit): 1 ขีด = 15 grams
+   - Learn Thai weight unit - ขีด (khit): 1 ขีด = 100 grams
    - Compare different weights
    - Multiple question types
 

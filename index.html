@@ -8,28 +8,36 @@
 </head>
 <body>
     <div class="container">
+        <div id="feedback-overlay" class="feedback-overlay" aria-hidden="true">
+            <img id="feedback-image" class="feedback-image" alt="" />
+        </div>
         <!-- Main Menu -->
         <div id="main-menu" class="screen active">
-            <h1 class="title">🎮 Math Learning Games 🎮</h1>
-            <h2 class="subtitle">เกมคณิตศาสตร์สนุกๆ</h2>
+            <h1 class="title" data-i18n="title">🎮 เกมฝึกคณิตศาสตร์ 🎮</h1>
+            <h2 class="subtitle" data-i18n="subtitle">เกมคณิตศาสตร์สนุกๆ</h2>
+
+            <div class="lang-selector" aria-label="Language selector">
+                <button class="lang-btn active" type="button" data-lang="th">ไทย</button>
+                <button class="lang-btn" type="button" data-lang="en">English</button>
+            </div>
             
             <div class="menu-buttons">
                 <button class="menu-btn" onclick="startGame('math')">
                     <span class="icon">➕➖✖️➗</span>
-                    <span class="btn-text">Basic Math</span>
-                    <span class="btn-desc">ฝึกบวก ลบ คูณ หาร</span>
+                    <span class="btn-text" data-i18n="menuMath">คณิตพื้นฐาน</span>
+                    <span class="btn-desc" data-i18n="menuMathDesc">ฝึกบวก ลบ คูณ หาร</span>
                 </button>
                 
                 <button class="menu-btn" onclick="startGame('weight')">
                     <span class="icon">⚖️</span>
-                    <span class="btn-text">Weight Conversion</span>
-                    <span class="btn-desc">แปลงหน่วยน้ำหนัก</span>
+                    <span class="btn-text" data-i18n="menuWeight">แปลงหน่วยน้ำหนัก</span>
+                    <span class="btn-desc" data-i18n="menuWeightDesc">กิโลกรัม กรัม และ ขีด</span>
                 </button>
                 
                 <button class="menu-btn" onclick="startGame('time')">
                     <span class="icon">🕐</span>
-                    <span class="btn-text">Time & Clock</span>
-                    <span class="btn-desc">เวลาและนาฬิกา</span>
+                    <span class="btn-text" data-i18n="menuTime">เวลาและนาฬิกา</span>
+                    <span class="btn-desc" data-i18n="menuTimeDesc">อ่านเวลาจากนาฬิกา</span>
                 </button>
             </div>
         </div>
@@ -37,9 +45,9 @@
         <!-- Basic Math Game -->
         <div id="math-game" class="screen">
             <div class="game-header">
-                <button class="back-btn" onclick="backToMenu()">🏠 Menu</button>
+                <button class="back-btn" onclick="backToMenu()" data-i18n="menuBack">🏠 เมนู</button>
                 <div class="score-display">
-                    <span class="score-label">Score:</span>
+                    <span class="score-label" data-i18n="scoreLabel">คะแนน:</span>
                     <span id="math-score" class="score-value">0</span>
                 </div>
             </div>
@@ -60,9 +68,9 @@
         <!-- Weight Conversion Game -->
         <div id="weight-game" class="screen">
             <div class="game-header">
-                <button class="back-btn" onclick="backToMenu()">🏠 Menu</button>
+                <button class="back-btn" onclick="backToMenu()" data-i18n="menuBack">🏠 เมนู</button>
                 <div class="score-display">
-                    <span class="score-label">Score:</span>
+                    <span class="score-label" data-i18n="scoreLabel">คะแนน:</span>
                     <span id="weight-score" class="score-value">0</span>
                 </div>
             </div>
@@ -83,9 +91,9 @@
         <!-- Time & Clock Game -->
         <div id="time-game" class="screen">
             <div class="game-header">
-                <button class="back-btn" onclick="backToMenu()">🏠 Menu</button>
+                <button class="back-btn" onclick="backToMenu()" data-i18n="menuBack">🏠 เมนู</button>
                 <div class="score-display">
-                    <span class="score-label">Score:</span>
+                    <span class="score-label" data-i18n="scoreLabel">คะแนน:</span>
                     <span id="time-score" class="score-value">0</span>
                 </div>
             </div>
@@ -94,11 +102,7 @@
                 <div class="clock-container">
                     <svg id="analog-clock" viewBox="0 0 200 200" class="clock">
                         <circle cx="100" cy="100" r="95" class="clock-face"/>
-                        <!-- Hour markers -->
-                        <line x1="100" y1="10" x2="100" y2="20" class="hour-marker" />
-                        <line x1="190" y1="100" x2="180" y2="100" class="hour-marker" />
-                        <line x1="100" y1="190" x2="100" y2="180" class="hour-marker" />
-                        <line x1="10" y1="100" x2="20" y2="100" class="hour-marker" />
+                        <g id="clock-ticks"></g>
                         
                         <!-- Clock hands -->
                         <line id="hour-hand" x1="100" y1="100" x2="100" y2="50" class="hour-hand" />
