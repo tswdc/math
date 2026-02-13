@@ -4,16 +4,16 @@ import { shuffleArray, showFeedbackOverlay, playFeedbackSound, fetchAiProblem, b
 
 const realisticReadTemplates = {
     th: [
-        ({ time }) => `รถโรงเรียนกำลังจะออกตอนนี้ ดูนาฬิกาแล้วตอบว่าเวลา ${time} ใช่ไหม?`,
-        ({ time }) => `ถึงเวลาเข้าแถวหน้าเสาธง ดูนาฬิกาแล้วเลือกเวลาให้ตรง (${time})`,
-        ({ time }) => `แม่บอกว่าได้เวลากินข้าวแล้ว นาฬิกาตอนนี้คือเวลา ${time} ใช่หรือไม่?`,
-        ({ time }) => `กิจกรรมศิลปะเริ่มตอนนี้ อ่านนาฬิกาแล้วเลือกเวลา ${time}`
+        () => 'รถโรงเรียนกำลังจะออกตอนนี้ ดูนาฬิกาแล้วตอบเวลา',
+        () => 'ถึงเวลาเข้าแถวหน้าเสาธง ดูนาฬิกาแล้วเลือกเวลาให้ตรง',
+        () => 'แม่บอกว่าได้เวลากินข้าวแล้ว นาฬิกาตอนนี้กี่โมง?',
+        () => 'กิจกรรมศิลปะเริ่มตอนนี้ อ่านนาฬิกาแล้วเลือกคำตอบที่ถูกต้อง'
     ],
     en: [
-        ({ time }) => `The school bus is leaving now. Read the clock and pick ${time}.`,
-        ({ time }) => `Assembly starts now. Read the clock and choose the correct time (${time}).`,
-        ({ time }) => `It is lunch time now. What time does the clock show? (${time})`,
-        ({ time }) => `Art class starts now. Read the clock and choose ${time}.`
+        () => 'The school bus is leaving now. Read the clock and choose the correct time.',
+        () => 'Assembly starts now. Read the clock and choose the correct answer.',
+        () => 'It is lunch time now. What time does the clock show?',
+        () => 'Art class starts now. Read the clock and pick the correct answer.'
     ]
 };
 
@@ -54,10 +54,10 @@ const compareNames = {
     en: ['Jake', 'Sully', 'Mia', 'Noah', 'Luna', 'Max']
 };
 
-function pickRealisticReadPrompt(language, time) {
+function pickRealisticReadPrompt(language) {
     const templates = realisticReadTemplates[language] || realisticReadTemplates.en;
     const template = templates[Math.floor(Math.random() * templates.length)];
-    return template({ time });
+    return template();
 }
 
 function pickRealisticComparePrompt(language, askEarlier, time1, time2) {
@@ -183,7 +183,7 @@ export async function generateTimeQuestion(appState) {
 
         const timeEl = document.getElementById('time-question');
         const timeString = formatTime(hours, minutes);
-        const fallback = pickRealisticReadPrompt(appState.currentLanguage, timeString);
+        const fallback = pickRealisticReadPrompt(appState.currentLanguage);
         timeEl.textContent = appState.aiEnabled ? appState.i18n[appState.currentLanguage].loadingText : fallback;
 
         if(appState.aiEnabled) {

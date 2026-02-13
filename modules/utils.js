@@ -124,5 +124,5 @@ export function buildWeightAiPrompt(scenario, currentLanguage) {
 
 export function buildTimeAiPrompt(currentLanguage, timeString, fallbackScenario) {
     const langLabel = currentLanguage === 'th' ? 'Thai' : 'English';
-    return `Create a grade 1-3 short prompt in ${langLabel} asking the student to read the clock. Use a realistic daily-life scenario. The intended clock time is ${timeString}. Similar context: "${fallbackScenario}". Keep it one or two short sentence, no answer, no hints, no include time.`;
+    return `Create a grade 1-3 short prompt in ${langLabel} asking the student to read the clock. Use a realistic daily-life scenario. The intended clock time is ${timeString} for internal reference only. Do not include any explicit clock time, numbers, or hour/minute values in the prompt text. Similar context: "${fallbackScenario}". Keep it one or two short sentences, no answer, no hints.`;
 }
